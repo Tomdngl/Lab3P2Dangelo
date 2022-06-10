@@ -47,7 +47,7 @@
                 <option value="Camioneta">Camioneta</option>
             </select><br>
             <label class="label" for="OpcTxtBox" id="lblOpc"> Opc1:</label><br>
-            <input class="input" id="Opc" type="text" class="input"><br>
+            <input class="input" id="OpcTxtBox" type="text" class="input"><br>
             <div class="buttons">
                 <input id="Abm-AceptarBtn" type="button" value="Aceptar" class="btn">
                 <input id="Abm-CancelarBtn" type="button" value="Cancelar" class="btn">
@@ -97,13 +97,45 @@
     function AgregarABM() {
         document.getElementById("table-wrapper").setAttribute("style", "display: none;");
         document.getElementById("form-wrapper").setAttribute("style", "display: block;");
+        document.getElementById("Abm-TipoCmbBox").removeAttribute("disabled");
+        document.getElementById("FabricanteTxtBox").removeAttribute("disabled");
+        document.getElementById("ModeloTxtBox").removeAttribute("disabled");
+        document.getElementById("AñoLanzamientoTxtBox").removeAttribute("disabled");
+        document.getElementById("OpcTxtBox").removeAttribute("disabled");
         document.getElementById("abm-encabezado").textContent = 'Alta';
         cmbCambio();
         document.getElementById("IdTxtBox").value = "";
         document.getElementById("FabricanteTxtBox").value = "";
         document.getElementById("ModeloTxtBox").value = "";
         document.getElementById("AñoLanzamientoTxtBox").value = "";
-        document.getElementById("Opc").value = "";
+        document.getElementById("OpcTxtBox").value = "";
+    }
+
+    function ModificarABM(fila) {
+        document.getElementById("table-wrapper").setAttribute("style", "display: none;");
+        document.getElementById("form-wrapper").setAttribute("style", "display: block;");
+        document.getElementById("Abm-TipoCmbBox").setAttribute("disabled", "true");
+        document.getElementById("FabricanteTxtBox").removeAttribute("disabled");
+        document.getElementById("ModeloTxtBox").removeAttribute("disabled");
+        document.getElementById("AñoLanzamientoTxtBox").removeAttribute("disabled");
+        document.getElementById("OpcTxtBox").removeAttribute("disabled");
+        document.getElementById("abm-encabezado").textContent = 'Modificar';
+        index = listaVehiculos.findIndex(element => element.id == fila)
+        document.getElementById("IdTxtBox").value = listaVehiculos[index].id;
+        document.getElementById("FabricanteTxtBox").value = listaVehiculos[index].fabricante;
+        document.getElementById("ModeloTxtBox").value = listaVehiculos[index].modelo;
+        document.getElementById("AñoLanzamientoTxtBox").value = listaVehiculos[index].añoLanzamiento;
+        cmbCambio();
+        if (listaVehiculos[index] instanceof Auto) {
+            document.getElementById("Abm-TipoCmbBox").value = "Auto"
+            document.getElementById("lblOpc").textContent = "Cantidad puertas"
+            document.getElementById("OpcTxtBox").value = listaVehiculos[index].cantidadPuertas;
+        }
+        else if (listaVehiculos[index] instanceof Camioneta) {
+            document.getElementById("Abm-TipoCmbBox").value = "Camioneta"
+            document.getElementById("lblOpc").textContent = "Transmision 4x4"
+            document.getElementById("OpcTxtBox").value = listaVehiculos[index].transmision4x4;
+        }
     }
 
     function CerrarABM() {
@@ -176,6 +208,61 @@
         xhttp.send(payload);
     }
 
+    async function Modificar() {
+        let datos = validarDatos();
+        let miAuto;
+        let miCamioneta;
+        let payload;
+        let url;
+        switch (document.getElementById("Abm-TipoCmbBox").value) {
+            case "Auto":
+                miAuto = new Auto(datos.get('id'), datos.get('fabricante'), datos.get('modelo'), datos.get('añoLanzamiento'), datos.get('cantidadPuertas'));
+                payload = miAuto.toJsonString(true);
+                url = "https://localhost:5001/Vehiculos/ModificarAuto";
+                break;
+            case "Camioneta":
+                miCamioneta = new Camioneta(datos.get('id'), datos.get('fabricante'), datos.get('modelo'), datos.get('añoLanzamiento'), datos.get('transmision4x4'));
+                payload = miCamioneta.toJsonString(true);
+                url = "https://localhost:5001/Vehiculos/ModificarCamioneta";
+                break;
+        }
+        spinner.removeAttribute('hidden');
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                mode: 'cors',
+                cache: 'no-cache',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                redirect: 'follow',
+                referrerPolicy: 'no-referrer',
+                body: payload
+            });
+            spinner.setAttribute('hidden', '');
+            switch (document.getElementById("Abm-TipoCmbBox").value) {
+                case "Auto":
+                    index = listaVehiculos.findIndex(element => element.id == datos.get('id'))
+                    listaVehiculos.splice(index, 1);
+                    listaVehiculos.push(miAuto);
+                    break;
+                case "Camioneta":
+                    index = listaVehiculos.findIndex(element => element.id == datos.get('id'))
+                    listaVehiculos.splice(index, 1);
+                    listaVehiculos.push(miCamioneta);
+                    break;
+            }
+            CerrarABM();
+            Ordenar();
+            LimpiarTabla();
+            crearFila(listaVehiculos);
+        } catch (error) {
+            spinner.setAttribute('hidden', '');
+            alert('No se ha podido acceder a ese recurso' + error);
+        }
+    }
+
     function Aceptar() {
         console.log(document.getElementById("abm-encabezado").textContent);
         switch (document.getElementById("abm-encabezado").textContent) {
@@ -230,8 +317,8 @@
         }
         switch (document.getElementById("Abm-TipoCmbBox").value) {
             case "Auto":
-                if (document.getElementById("Opc").value >= 2) {
-                    let cantidadPuertas = document.getElementById("Opc").value
+                if (document.getElementById("OpcTxtBox").value >= 2) {
+                    let cantidadPuertas = document.getElementById("OpcTxtBox").value
                     if (isOk) {
                         datos.set('id', id);
                         datos.set('fabricante', fabricante);
@@ -246,8 +333,8 @@
                 }
                 break;
             case "Camioneta":
-                if (document.getElementById("Opc").value == 'SI' || document.getElementById("Opc").value == 'NO') {
-                    let transmision4x4 = document.getElementById("Opc").value
+                if (document.getElementById("OpcTxtBox").value == 'SI' || document.getElementById("OpcTxtBox").value == 'NO') {
+                    let transmision4x4 = document.getElementById("OpcTxtBox").value
                     if (isOk) {
                         datos.set('id', id);
                         datos.set('fabricante', fabricante);
@@ -312,7 +399,7 @@
             fila.appendChild(eliminar);
 
             fila.setAttribute("id", element.id);
-            //modificarBtn.addEventListener("click", () => ModificarABM(modificarBtn.id));
+            modificarBtn.addEventListener("click", () => ModificarABM(modificarBtn.id));
             //eliminarBtn.addEventListener("click", () => EliminarABM(eliminarBtn.id));
 
             document.getElementById("cuerpo").appendChild(fila);
