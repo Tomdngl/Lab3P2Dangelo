@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practica segundo parcial</title>
+</head>
+
+<body>
+    <div class="table-wrapper" id="table-wrapper" style="display:none">
+        <table class="fl-table">
+            <thead>
+                <tr>
+                    <th id="header-id" style="display: table-cell;">ID</th>
+                    <th id="header-fabricante" style="display: table-cell;">Fabricante</th>
+                    <th id="header-modelo" style="display:table-cell">Modelo</th>
+                    <th id="header-añoLanzamiento" style="display:table-cell">Año lanzamiento</th>
+                    <th id="header-cantidadPuertas" style="display:table-cell">Cantidad puertas</th>
+                    <th id="header-transmision4x4" style="display:table-cell">Transmision 4x4</th>
+                    <th id="header-modificar" style="display:table-cell">Modificar</th>
+                    <th id="header-eliminar" style="display:table-cell">Eliminar</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo">
+            </tbody>
+        </table>
+        <form class="buttons">
+            <input class="btn" id="AgregarBtn" type="button" value="Agregar elemento">
+        </form>
+    </div>
+    <div class="form-wrapper" id="form-wrapper" style="display:none">
+        <form action="" id="Form-ABM" class="form-abm" style="display:block">
+            <h1 class="titulo" id="abm-encabezado" tipo="">Form Modificacion/Eliminacion</h1>
+            <label class="label" for="IdTxtBox"> Id:</label><br>
+            <input class="input" id="IdTxtBox" type="text" readonly><br>
+            <label class="label" for="FabricanteTxtBox"> Fabricante:</label><br>
+            <input class="input" id="FabricanteTxtBox" type="number"><br>
+            <label class="label" for="ModeloTxtBox"> Modelo:</label><br>
+            <input class="input" id="ModeloTxtBox" type="text"><br>
+            <label class="label" for="AñoLanzamientoTxtBox"> Año Lanzamiento:</label><br>
+            <input class="input" id="AñoLanzamientoTxtBox" type="text"><br>
+            <label class="label" for="Abm-TipoCmbBox"> Tipo:</label><br>
+            <select id="Abm-TipoCmbBox" class="input">
+                <option value="Auto">Auto</option>
+                <option value="Camioneta">Camioneta</option>
+            </select><br>
+            <label class="label" for="OpcTxtBox" id="lblOpc"> Opc1:</label><br>
+            <input class="input" id="Opc" type="text" class="input"><br>
+            <div class="buttons">
+                <input id="Abm-AceptarBtn" type="button" value="Aceptar" class="btn">
+                <input id="Abm-CancelarBtn" type="button" value="Cancelar" class="btn">
+            </div>
+        </form>
+    </div>
+    <div hidden id="spinner"></div>
+</body>
+<script>
+    //Clases
+    class Vehiculo {
+        constructor(par1, par2, par3, par4) {
+            this.id = par1;
+            this.fabricante = par2;
+            this.modelo = par3;
+            this.añoLanzamiento = par4;
+        }
+        toJsonString(conId) {
+            if (conId) {
+                return JSON.stringify(this);
+            } else {
+                //Añadir reeplacer cuando pueda probarlo
+                return JSON.stringify(this, function (key, value) {
+                    if (key === 'id') {
+                        return undefined;
+                    }
+                    return value;
+                });
+            }
+        }
+    }
+    class Auto extends Vehiculo {
+        constructor(par1, par2, par3, par4, par5) {
+            super(par1, par2, par3, par4);
+            this.cantidadPuertas = par5;
+        }
+    }
+    class Camioneta extends Vehiculo {
+        constructor(par1, par2, par3, par4, par5) {
+            super(par1, par2, par3, par4);
+            this.transmision4x4 = par5;
+        }
+    }
+
+    //Variables
+    let listaVehiculos
+    //Funciones relacionadas al ABM
+    function AgregarABM() {
+        document.getElementById("table-wrapper").setAttribute("style", "display: none;");
+        document.getElementById("form-wrapper").setAttribute("style", "display: block;");
+        document.getElementById("abm-encabezado").textContent = 'Alta';
+        cmbCambio();
+        document.getElementById("IdTxtBox").value = "";
+        document.getElementById("FabricanteTxtBox").value = "";
+        document.getElementById("ModeloTxtBox").value = "";
+        document.getElementById("AñoLanzamientoTxtBox").value = "";
+        document.getElementById("Opc").value = "";
+    }
+
+    function cmbCambio() {
+        if (document.getElementById("Abm-TipoCmbBox").value == "Auto") {
+            document.getElementById("lblOpc").textContent = "Cantidad puertas";
+        }
+        else {
+            document.getElementById("lblOpc").textContent = "Transmision 4x4";
+        }
+    }
+    //Funciones
+    function crearFila(lista) {
+        lista.forEach(element => {
+            let elementCantidadPuertas = element.cantidadPuertas;
+            let elementTransmision4x4 = element.transmision4x4;
+            if (element.cantidadPuertas === undefined) {
+                elementCantidadPuertas = "N/A"
+            }
+            if (element.transmision4x4 === undefined) {
+                elementTransmision4x4 = "N/A"
+            }
+
+            let fila = document.createElement("tr");
+            let id = document.createElement("td");
+            id.appendChild(document.createTextNode(element.id))
+            fila.appendChild(id);
+            let fabricante = document.createElement("td");
+            fabricante.appendChild(document.createTextNode(element.fabricante))
+            fila.appendChild(fabricante);
+            let modelo = document.createElement("td");
+            modelo.appendChild(document.createTextNode(element.modelo))
+            fila.appendChild(modelo);
+            let añoLanzamiento = document.createElement("td");
+            añoLanzamiento.appendChild(document.createTextNode(element.añoLanzamiento))
+            fila.appendChild(añoLanzamiento);
+            let cantidadPuertas = document.createElement("td");
+            cantidadPuertas.appendChild(document.createTextNode(elementCantidadPuertas))
+            fila.appendChild(cantidadPuertas);
+            let transmision4x4 = document.createElement("td");
+            transmision4x4.appendChild(document.createTextNode(elementTransmision4x4))
+            fila.appendChild(transmision4x4);
+
+            let modificar = document.createElement("td");
+            let modificarBtn = document.createElement("button");
+            modificarBtn.innerHTML = 'Modificar';
+            modificarBtn.id = element.id;
+            modificarBtn.className = 'btn';
+            modificar.appendChild(modificarBtn);
+            fila.appendChild(modificar);
+            let eliminar = document.createElement("td");
+            let eliminarBtn = document.createElement("button");
+            eliminarBtn.innerHTML = 'Eliminar';
+            eliminarBtn.id = element.id;
+            eliminarBtn.className = 'btn';
+            eliminar.appendChild(eliminarBtn);
+            fila.appendChild(eliminar);
+
+            fila.setAttribute("id", element.id);
+            //modificarBtn.addEventListener("click", () => ModificarABM(modificarBtn.id));
+            //eliminarBtn.addEventListener("click", () => EliminarABM(eliminarBtn.id));
+
+            document.getElementById("cuerpo").appendChild(fila);
+        });
+    }
+
+    window.addEventListener("load", () => {
+        spinner.removeAttribute('hidden');
+        let response = fetch('https://localhost:5001/Vehiculos/Vehiculos', {
+            method: 'GET',
+        })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+            })
+            .then(data => {
+                console.log("Carga de vehiculos exitosa.");
+                listaVehiculos = data.map((element, index, array) => {
+                    if (element.hasOwnProperty('cantidadPuertas')) {
+                        return new Auto(element.id, element.fabricante, element.modelo, element.añoLanzamiento, element.cantidadPuertas);
+                    }
+                    else {
+                        return new Camioneta(element.id, element.fabricante, element.modelo, element.añoLanzamiento, element.transmision4x4);
+                    }
+                });
+                document.getElementById("table-wrapper").setAttribute("style", "display: block;");
+                crearFila(listaVehiculos);
+                console.log(listaVehiculos);
+                spinner.setAttribute('hidden', '');
+            })
+            .catch(function (error) {
+                spinner.setAttribute('hidden', '');
+                alert('No se ha podido acceder a ese recurso' + error);
+            });
+
+        document.getElementById("AgregarBtn").addEventListener("click", () => AgregarABM());
+        document.getElementById("Abm-TipoCmbBox").addEventListener("change", () => cmbCambio());
+
+    });
+</script>
+<style>
+    body {
+        font-family: Helvetica;
+        -webkit-font-smoothing: antialiased;
+        background: rgb(111, 168, 230);
+    }
+
+    h2 {
+        text-align: center;
+        font-size: 18px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: white;
+        padding: 30px 0;
+    }
+
+    .label {
+        margin-left: 10px;
+        color: white;
+        font-weight: 700;
+        font-family: Helvetica;
+    }
+
+    .input {
+        margin-left: 10px;
+    }
+
+    /* Table Styles */
+
+    .table-wrapper {
+        margin: 20px 70px 70px;
+    }
+
+    .form-wrapper {
+        margin: 10px 450px 450px;
+        box-shadow: 0px 35px 50px rgba(0, 0, 0, 0.2);
+    }
+
+    .fl-table {
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: normal;
+        border: none;
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 100%;
+        white-space: nowrap;
+        background-color: white;
+    }
+
+    .form-abm {
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: normal;
+        border: none;
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 100%;
+        white-space: nowrap;
+        background-color: #4FC3A1;
+    }
+
+    .fl-table td,
+    .fl-table th {
+        text-align: center;
+        padding: 8px;
+    }
+
+    .fl-table td {
+        border-right: 1px solid #f8f8f8;
+        font-size: 12px;
+    }
+
+    .fl-table thead th {
+        color: #ffffff;
+        background: #4FC3A1;
+    }
+
+
+    .fl-table thead th:nth-child(odd) {
+        color: #ffffff;
+        background: #324960;
+    }
+
+    .fl-table tr:nth-child(even) {
+        background: #F8F8F8;
+    }
+
+    .buttons {
+        display: flex;
+        justify-content: space-evenly;
+        padding: 10px;
+        margin: 10px;
+    }
+
+    .titulo {
+        display: flex;
+        justify-content: center;
+        color: antiquewhite;
+        font-weight: normal;
+        background-color: #324960;
+    }
+
+    /* Spinner */
+    #spinner:not([hidden]) {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #spinner::after {
+        content: "";
+        width: 80px;
+        height: 80px;
+        border: 2px solid #f3f3f3;
+        border-top: 3px solid #f25a41;
+        border-radius: 100%;
+        will-change: transform;
+        animation: spin 1s infinite linear
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
