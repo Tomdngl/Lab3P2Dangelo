@@ -36,11 +36,11 @@
             <label class="label" for="IdTxtBox"> Id:</label><br>
             <input class="input" id="IdTxtBox" type="text" readonly><br>
             <label class="label" for="FabricanteTxtBox"> Fabricante:</label><br>
-            <input class="input" id="FabricanteTxtBox" type="number"><br>
+            <input class="input" id="FabricanteTxtBox" type="text"><br>
             <label class="label" for="ModeloTxtBox"> Modelo:</label><br>
             <input class="input" id="ModeloTxtBox" type="text"><br>
             <label class="label" for="AñoLanzamientoTxtBox"> Año Lanzamiento:</label><br>
-            <input class="input" id="AñoLanzamientoTxtBox" type="text"><br>
+            <input class="input" id="AñoLanzamientoTxtBox" type="number"><br>
             <label class="label" for="Abm-TipoCmbBox"> Tipo:</label><br>
             <select id="Abm-TipoCmbBox" class="input">
                 <option value="Auto">Auto</option>
@@ -69,7 +69,6 @@
             if (conId) {
                 return JSON.stringify(this);
             } else {
-                //Añadir reeplacer cuando pueda probarlo
                 return JSON.stringify(this, function (key, value) {
                     if (key === 'id') {
                         return undefined;
@@ -107,6 +106,91 @@
         document.getElementById("Opc").value = "";
     }
 
+    function CerrarABM() {
+        document.getElementById("table-wrapper").setAttribute("style", "display: block;")
+        document.getElementById("form-wrapper").setAttribute("style", "display: none;")
+    }
+
+    function Ordenar() {
+        listaVehiculos.sort(criterio);
+
+        function criterio(a, b) {
+            if (b.cantidadPuertas > a.cantidadPuertas || b.cantidadPuertas == undefined) {
+                return -1;
+            }
+            if (a.cantidadPuertas > b.cantidadPuertas) {
+                return 1;
+            }
+            return 0;
+        }
+    }
+
+    function Alta(exito, error) {
+        let datos = validarDatos();
+        let miAuto;
+        let miCamioneta;
+        let payload;
+        let url;
+        switch (document.getElementById("Abm-TipoCmbBox").value) {
+            case "Auto":
+                miAuto = new Auto(null, datos.get('fabricante'), datos.get('modelo'), datos.get('añoLanzamiento'), datos.get('cantidadPuertas'));
+                payload = miAuto.toJsonString(false);
+                url = "https://localhost:5001/Vehiculos/InsertarAuto";
+                break;
+            case "Camioneta":
+                miCamioneta = new Camioneta(null, datos.get('fabricante'), datos.get('modelo'), datos.get('añoLanzamiento'), datos.get('transmision4x4'));
+                payload = miCamioneta.toJsonString(false);
+                url = "https://localhost:5001/Vehiculos/InsertarCamioneta";
+                break;
+        }
+        spinner.removeAttribute('hidden');
+        var xhttp = new XMLHttpRequest();
+        xhttp.open("PUT", url, true);
+        xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                spinner.setAttribute('hidden', '');
+                var response = JSON.parse(this.responseText);
+                switch (document.getElementById("Abm-TipoCmbBox").value) {
+                    case "Auto":
+                        miAuto.id = response.id;
+                        listaVehiculos.push(miAuto);
+                        break;
+                    case "Camioneta":
+                        miCamioneta.id = response.id;
+                        listaVehiculos.push(miCamioneta);
+                        break;
+                }
+                CerrarABM();
+                Ordenar();
+                LimpiarTabla();
+                crearFila(listaVehiculos);
+            }
+            if (this.readyState == 4 && this.status != 200) {
+                alert("Error");
+                spinner.setAttribute('hidden', '');
+                console.log(this);
+                console.log(this.responseText);
+            }
+        };
+        xhttp.send(payload);
+    }
+
+    function Aceptar() {
+        console.log(document.getElementById("abm-encabezado").textContent);
+        switch (document.getElementById("abm-encabezado").textContent) {
+            case "Alta":
+                Alta();
+                break;
+            case "Modificar":
+                Modificar();
+                break;
+            case "Eliminar":
+                Eliminar();
+                break;
+        }
+    }
+
     function cmbCambio() {
         if (document.getElementById("Abm-TipoCmbBox").value == "Auto") {
             document.getElementById("lblOpc").textContent = "Cantidad puertas";
@@ -116,6 +200,71 @@
         }
     }
     //Funciones
+    function validarDatos() {
+        let datos = new Map();
+        let isOk = true;
+        let fabricante
+        let modelo
+        let añoLanzamiento;
+        let id = document.getElementById("IdTxtBox").value;
+        fabricante = document.getElementById("FabricanteTxtBox").value;
+        if (fabricante != "" && fabricante != null) {
+        }
+        else {
+            isOk = false;
+            alert("Error con el fabricante");
+        }
+        modelo = document.getElementById("ModeloTxtBox").value;
+        if (modelo != "" && modelo != null) {
+        }
+        else {
+            isOk = false;
+            alert("Error con el modelo.");
+        }
+        añoLanzamiento = document.getElementById("AñoLanzamientoTxtBox").value;
+        if (añoLanzamiento != "" && añoLanzamiento > 1920) {
+        }
+        else {
+            isOk = false;
+            alert("Error con el año de lanzamiento. Debe ser mayor a 1920");
+        }
+        switch (document.getElementById("Abm-TipoCmbBox").value) {
+            case "Auto":
+                if (document.getElementById("Opc").value >= 2) {
+                    let cantidadPuertas = document.getElementById("Opc").value
+                    if (isOk) {
+                        datos.set('id', id);
+                        datos.set('fabricante', fabricante);
+                        datos.set('modelo', modelo);
+                        datos.set('añoLanzamiento', añoLanzamiento);
+                        datos.set('cantidadPuertas', cantidadPuertas);
+                        return datos;
+                    }
+                }
+                else {
+                    alert("Error con la cantidad de puertas. Debe ser mayor a 2");
+                }
+                break;
+            case "Camioneta":
+                if (document.getElementById("Opc").value == 'SI' || document.getElementById("Opc").value == 'NO') {
+                    let transmision4x4 = document.getElementById("Opc").value
+                    if (isOk) {
+                        datos.set('id', id);
+                        datos.set('fabricante', fabricante);
+                        datos.set('modelo', modelo);
+                        datos.set('añoLanzamiento', añoLanzamiento);
+                        datos.set('transmision4x4', transmision4x4);
+                        return datos;
+                    }
+                }
+                else {
+                    alert("Error con transmision 4x4. [SI / NO]");
+                }
+                break;
+        }
+        return false;
+    }
+
     function crearFila(lista) {
         lista.forEach(element => {
             let elementCantidadPuertas = element.cantidadPuertas;
@@ -170,6 +319,13 @@
         });
     }
 
+    function LimpiarTabla() {
+        Nodo = document.getElementById("cuerpo");
+        while (Nodo.firstChild) {
+            Nodo.removeChild(Nodo.lastChild);
+        }
+    }
+
     window.addEventListener("load", () => {
         spinner.removeAttribute('hidden');
         let response = fetch('https://localhost:5001/Vehiculos/Vehiculos', {
@@ -201,6 +357,8 @@
             });
 
         document.getElementById("AgregarBtn").addEventListener("click", () => AgregarABM());
+        document.getElementById("Abm-AceptarBtn").addEventListener("click", () => Aceptar());
+        document.getElementById("Abm-CancelarBtn").addEventListener("click", () => CerrarABM());
         document.getElementById("Abm-TipoCmbBox").addEventListener("change", () => cmbCambio());
 
     });
