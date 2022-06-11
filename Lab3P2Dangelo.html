@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Practica segundo parcial</title>
+    <title>Segundo parcial Dangelo Tomas</title>
 </head>
 
 <body>
@@ -138,6 +138,33 @@
         }
     }
 
+    function EliminarABM(fila) {
+        document.getElementById("table-wrapper").setAttribute("style", "display: none;");
+        document.getElementById("form-wrapper").setAttribute("style", "display: block;");
+        document.getElementById("Abm-TipoCmbBox").setAttribute("disabled", "true;");
+        document.getElementById("FabricanteTxtBox").setAttribute("disabled", "true;");
+        document.getElementById("ModeloTxtBox").setAttribute("disabled", "true;");
+        document.getElementById("AñoLanzamientoTxtBox").setAttribute("disabled", "true;");
+        document.getElementById("OpcTxtBox").setAttribute("disabled", "true;");
+        document.getElementById("abm-encabezado").textContent = 'Eliminar';
+        index = listaVehiculos.findIndex(element => element.id == fila)
+        document.getElementById("IdTxtBox").value = listaVehiculos[index].id;
+        document.getElementById("FabricanteTxtBox").value = listaVehiculos[index].fabricante;
+        document.getElementById("ModeloTxtBox").value = listaVehiculos[index].modelo;
+        document.getElementById("AñoLanzamientoTxtBox").value = listaVehiculos[index].añoLanzamiento;
+        cmbCambio();
+        if (listaVehiculos[index] instanceof Auto) {
+            document.getElementById("Abm-TipoCmbBox").value = "Auto"
+            document.getElementById("lblOpc").textContent = "Cantidad puertas"
+            document.getElementById("OpcTxtBox").value = listaVehiculos[index].cantidadPuertas;
+        }
+        else if (listaVehiculos[index] instanceof Camioneta) {
+            document.getElementById("Abm-TipoCmbBox").value = "Camioneta"
+            document.getElementById("lblOpc").textContent = "Transmision 4x4"
+            document.getElementById("OpcTxtBox").value = listaVehiculos[index].transmision4x4;
+        }
+    }
+
     function CerrarABM() {
         document.getElementById("table-wrapper").setAttribute("style", "display: block;")
         document.getElementById("form-wrapper").setAttribute("style", "display: none;")
@@ -240,6 +267,10 @@
                 referrerPolicy: 'no-referrer',
                 body: payload
             });
+            if (!response.ok) {
+                const message = response.status;
+                throw new Error(message);
+            }
             spinner.setAttribute('hidden', '');
             switch (document.getElementById("Abm-TipoCmbBox").value) {
                 case "Auto":
@@ -260,6 +291,50 @@
         } catch (error) {
             spinner.setAttribute('hidden', '');
             alert('No se ha podido acceder a ese recurso' + error);
+        }
+    }
+
+    async function Eliminar() {
+        let datos = validarDatos();
+        let payload = JSON.stringify({ id: datos.get('id') });
+        let url = "https://localhost:5001/Vehiculos/EliminarVehiculo";
+        spinner.removeAttribute('hidden');
+        try {
+            const response = await fetch(url, {
+                method: 'DELETE',
+                mode: 'cors',
+                cache: 'no-cache',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                redirect: 'follow',
+                referrerPolicy: 'no-referrer',
+                body: payload
+            });
+            if (!response.ok) {
+                const message = response.status;
+                throw new Error(message);
+            }
+            spinner.setAttribute('hidden', '');
+            switch (document.getElementById("Abm-TipoCmbBox").value) {
+                case "Auto":
+                    index = listaVehiculos.findIndex(element => element.id == datos.get('id'))
+                    listaVehiculos.splice(index, 1);
+                    break;
+                case "Camioneta":
+                    index = listaVehiculos.findIndex(element => element.id == datos.get('id'))
+                    listaVehiculos.splice(index, 1);
+                    break;
+            }
+            CerrarABM();
+            Ordenar();
+            LimpiarTabla();
+            crearFila(listaVehiculos);
+        } catch (error) {
+            CerrarABM();
+            spinner.setAttribute('hidden', '');
+            alert('No se ha podido acceder a ese recurso. ' + error);
         }
     }
 
@@ -362,7 +437,6 @@
             if (element.transmision4x4 === undefined) {
                 elementTransmision4x4 = "N/A"
             }
-
             let fila = document.createElement("tr");
             let id = document.createElement("td");
             id.appendChild(document.createTextNode(element.id))
@@ -382,7 +456,6 @@
             let transmision4x4 = document.createElement("td");
             transmision4x4.appendChild(document.createTextNode(elementTransmision4x4))
             fila.appendChild(transmision4x4);
-
             let modificar = document.createElement("td");
             let modificarBtn = document.createElement("button");
             modificarBtn.innerHTML = 'Modificar';
@@ -397,10 +470,9 @@
             eliminarBtn.className = 'btn';
             eliminar.appendChild(eliminarBtn);
             fila.appendChild(eliminar);
-
             fila.setAttribute("id", element.id);
             modificarBtn.addEventListener("click", () => ModificarABM(modificarBtn.id));
-            //eliminarBtn.addEventListener("click", () => EliminarABM(eliminarBtn.id));
+            eliminarBtn.addEventListener("click", () => EliminarABM(eliminarBtn.id));
 
             document.getElementById("cuerpo").appendChild(fila);
         });
@@ -440,7 +512,7 @@
             })
             .catch(function (error) {
                 spinner.setAttribute('hidden', '');
-                alert('No se ha podido acceder a ese recurso' + error);
+                alert('No se ha podido acceder a ese recurso ' + error);
             });
 
         document.getElementById("AgregarBtn").addEventListener("click", () => AgregarABM());
