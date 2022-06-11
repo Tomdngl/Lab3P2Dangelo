@@ -289,8 +289,9 @@
             LimpiarTabla();
             crearFila(listaVehiculos);
         } catch (error) {
+            CerrarABM();
             spinner.setAttribute('hidden', '');
-            alert('No se ha podido acceder a ese recurso' + error);
+            alert('No se ha podido acceder a ese recurso ' + error);
         }
     }
 
@@ -519,7 +520,6 @@
         document.getElementById("Abm-AceptarBtn").addEventListener("click", () => Aceptar());
         document.getElementById("Abm-CancelarBtn").addEventListener("click", () => CerrarABM());
         document.getElementById("Abm-TipoCmbBox").addEventListener("change", () => cmbCambio());
-
     });
 </script>
 <style>
